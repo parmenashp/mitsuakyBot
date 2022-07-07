@@ -1,3 +1,3 @@
 # mitsuakyBot
 
-Personal Discord bot for servers I like
+Personal discord bot for servers that I like
