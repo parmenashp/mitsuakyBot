@@ -210,7 +210,7 @@ test = ["appdirs (==1.4.4)", "pytest-cov (>=2.7)", "pytest-mock (>=3.6)", "pytes
 name = "tomli"
 version = "2.0.1"
 description = "A lil' TOML parser"
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.7"
 
@@ -240,7 +240,7 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.10"
-content-hash = "82b9bfb4e42917f8f4c1a57de199d76c23024b13281a3ad04f66367e36a80864"
+content-hash = "fbc296496c21edc782511d0d0c1a09b1d74df5597210e4f7899bdee194887a0a"
 
 [metadata.files]
 aiohttp = [
