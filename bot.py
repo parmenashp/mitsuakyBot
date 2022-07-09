@@ -7,7 +7,7 @@ from utils.config import Config
 from utils.context import MitsuakyContext
 from utils.logging import setup_logger
 
-initial_extensions = []
+from loguru import logger
 
 
 class MitBot(commands.Bot):
@@ -39,6 +39,13 @@ class MitBot(commands.Bot):
             enable_debug_events=True,
         )
 
+    async def setup_hook(self):
+        for extension in self.config.bot.initial_extensions:
+            try:
+                await self.load_extension(extension)
+            except Exception:
+                logger.exception(f"Error while loading extension {extension}")
+
     async def on_ready(self):
         if not hasattr(self, "uptime"):
             self.uptime = discord.utils.utcnow()
@@ -49,7 +56,7 @@ class MitBot(commands.Bot):
 
 
 async def main():
-    setup_logger()
+    setup_logger()  # setup loguru
     config = Config()
     pool_kwargs = {
         "user": config.db.username,
@@ -61,4 +68,6 @@ async def main():
     async with asyncpg.create_pool(**pool_kwargs) as pool:
         async with ClientSession() as aio_client:
             async with MitBot(config, pool, aio_client) as bot:
+                # load jishaku before everything else
+                await bot.load_extension("jishaku")
                 await bot.start(config.bot.token)
