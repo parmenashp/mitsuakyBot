@@ -4,6 +4,7 @@ from aiohttp import ClientSession
 from discord.ext import commands
 
 from utils.config import Config
+from utils.context import MitsuakyContext
 from utils.logging import setup_logger
 
 initial_extensions = []
@@ -41,6 +42,10 @@ class MitBot(commands.Bot):
     async def on_ready(self):
         if not hasattr(self, "uptime"):
             self.uptime = discord.utils.utcnow()
+
+    async def on_message(self, message: discord.Message) -> None:
+        ctx = await self.get_context(message, cls=MitsuakyContext)
+        await self.invoke(ctx)
 
 
 async def main():
