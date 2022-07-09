@@ -1,18 +1,18 @@
-import os
-
 import asyncpg
 import discord
 from aiohttp import ClientSession
 from discord.ext import commands
 
-from utils.config import ConfigLoader
+from utils.config import Config
 from utils.logging import setup_logger
+
+initial_extensions = []
 
 
 class MitBot(commands.Bot):
     def __init__(
         self,
-        config: ConfigLoader,
+        config: Config,
         db_pool: asyncpg.Pool,
         web_client: ClientSession,
     ):
@@ -30,7 +30,7 @@ class MitBot(commands.Bot):
         intents.members = True
 
         super().__init__(
-            command_prefix=commands.when_mentioned_or(self.config.bot["prefix"]),
+            command_prefix=commands.when_mentioned_or(self.config.bot.prefix),
             pm_help=None,
             chunk_guilds_at_startup=False,
             allowed_mentions=allowed_mentions,
@@ -45,9 +45,15 @@ class MitBot(commands.Bot):
 
 async def main():
     setup_logger()
-    config = ConfigLoader()
+    config = Config()
+    pool_kwargs = {
+        "user": config.db.username,
+        "password": config.db.password,
+        "database": config.db.database_name,
+        "command_timeout": 30,
+    }
 
-    async with asyncpg.create_pool(user="postgres", command_timeout=30) as pool:
+    async with asyncpg.create_pool(**pool_kwargs) as pool:
         async with ClientSession() as aio_client:
             async with MitBot(config, pool, aio_client) as bot:
-                await bot.start(os.environ["DISCORD_TOKEN"])
+                await bot.start(config.bot.token)
