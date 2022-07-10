@@ -1,3 +1,4 @@
+import asyncio
 import asyncpg
 import discord
 from aiohttp import ClientSession
@@ -71,3 +72,10 @@ async def main():
                 # load jishaku before everything else
                 await bot.load_extension("jishaku")
                 await bot.start(config.bot.token)
+
+
+if __name__ == "__main__":
+    from dotenv import load_dotenv
+
+    load_dotenv()
+    asyncio.run(main())
