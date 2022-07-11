@@ -126,6 +126,8 @@ async def main():
         "user": config.db.username,
         "password": config.db.password,
         "database": config.db.database_name,
+        "host": config.db.host,
+        "port": config.db.port,
         "command_timeout": 30,
     }
 
