@@ -57,10 +57,14 @@ class DatabaseConfig:
 
 
 class Config:
-    __slots__ = {"toml_values", "bot", "db", "karma"}
+    __slots__ = {"toml_values", "toml_path", "bot", "db", "karma"}
 
     def __init__(self, toml_path: str = DEFAULT_FILE_LOCATION) -> None:
-        with open(toml_path, "rb") as f:
+        self.toml_path = toml_path
+        self.reload_config()
+
+    def reload_config(self):
+        with open(self.toml_path, "rb") as f:
             self.toml_values = tomli.load(f)
 
         self.db = DatabaseConfig()
