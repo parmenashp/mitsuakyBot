@@ -28,7 +28,6 @@ def setup_logger():
     logging.getLogger("discord").setLevel(logging.INFO)
     logging.getLogger("discord.http").setLevel(logging.WARNING)
 
-    logger.add(sys.stdout)
     # logger.add(
     #     "logs/mitbot_{time}.log",
     #     compression="zip",
