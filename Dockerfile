@@ -16,4 +16,6 @@ RUN poetry config virtualenvs.create false \
 
 COPY . .
 
+COPY config.toml ./
+
 CMD ["python", "bot.py"]
