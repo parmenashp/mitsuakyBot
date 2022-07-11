@@ -51,9 +51,9 @@ class DatabaseConfig:
     __slots__ = {"username", "password", "database_name", "host", "port"}
 
     def __init__(self):
-        self.username = os.getenv("POSTGRES_USERNAME")
+        self.username = os.getenv("POSTGRES_USER")
         self.password = os.getenv("POSTGRES_PASSWORD")
-        self.database_name = os.getenv("POSTGRES_DB_NAME")
+        self.database_name = os.getenv("POSTGRES_DB")
         self.host = os.getenv("POSTGRES_HOST")
         self.port = os.getenv("POSTGRES_PORT")
 
