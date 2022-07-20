@@ -1,14 +1,14 @@
 import asyncio
+
 import asyncpg
 import discord
 from aiohttp import ClientSession
 from discord.ext import commands
+from loguru import logger
 
 from utils.config import Config
 from utils.context import MitsuakyContext
 from utils.logging import setup_logger
-
-from loguru import logger
 
 
 class MitBot(commands.Bot):
@@ -28,6 +28,7 @@ class MitBot(commands.Bot):
             users=True,
         )
         intents = discord.Intents.default()
+        intents.invites = True
         intents.message_content = True
         intents.members = True
 
@@ -104,11 +105,13 @@ class MitBot(commands.Bot):
         return members[0]
 
     async def setup_hook(self):
-        for extension in self.config.bot.initial_extensions:
-            try:
-                await self.load_extension(extension)
-            except Exception:
-                logger.exception(f"Error while loading extension {extension}")
+        initial_extensions = self.config.bot.initial_extensions
+        if initial_extensions:
+            for extension in initial_extensions:
+                try:
+                    await self.load_extension(extension)
+                except Exception:
+                    logger.exception(f"Error while loading extension {extension}")
 
     async def on_ready(self):
         if not hasattr(self, "uptime"):
@@ -133,14 +136,12 @@ async def main():
 
     async with asyncpg.create_pool(**pool_kwargs) as pool:
         async with ClientSession() as aio_client:
+            await config.initialize(pool)
             async with MitBot(config, pool, aio_client) as bot:
-                # load jishaku before everything else
+                # always load jishaku to have at least basic remote control/debug
                 await bot.load_extension("jishaku")
                 await bot.start(config.bot.token)
 
 
 if __name__ == "__main__":
-    from dotenv import load_dotenv
-
-    load_dotenv()
     asyncio.run(main())
