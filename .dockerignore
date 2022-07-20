@@ -1,5 +1,5 @@
 Dockerfile
-.env
+*.env
 .git/
 .python-version
 __pycache__
