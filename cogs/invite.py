@@ -13,6 +13,13 @@ if TYPE_CHECKING:
 
 MAX_AGE_SECONDS = 60 * 60 * 24  # 1 day
 
+# ####################################################
+# For this cog to work, the bot needs,
+# besides the defualt permissions, theses permissions:
+# Manage Channels
+# Manage Guild
+# Create Invites
+
 
 class InviteNotFound(Exception):  # Unessential, but I like it.
     pass
