@@ -44,7 +44,10 @@ class Karma(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message) -> None:
-        if message.channel.id not in self.bot.config.karma.channels:
+        if (
+            message.channel.id
+            not in self.bot.config.guild[message.guild.id].karma_channels
+        ):
             return
         if message.author.bot:
             return
@@ -53,8 +56,8 @@ class Karma(commands.Cog):
         ):
             return
 
-        await message.add_reaction(self.bot.config.karma.upvote_emoji)
-        await message.add_reaction(self.bot.config.karma.downvote_emoji)
+        await message.add_reaction(self.bot.config.bot.upvote_emoji)
+        await message.add_reaction(self.bot.config.bot.downvote_emoji)
 
         async with self.bot.db_pool.acquire() as conn:
             conn: asyncpg.Connection
@@ -69,14 +72,17 @@ class Karma(commands.Cog):
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload: RawReactionActionEvent):
-        if payload.channel_id not in self.bot.config.karma.channels:
+        if (
+            payload.channel_id
+            not in self.bot.config.guild[payload.guild_id].karma_channels
+        ):
             return
         if payload.member is None:
             return
         if payload.member.bot:
             return
 
-        if payload.emoji == self.bot.config.karma.upvote_emoji:
+        if payload.emoji == self.bot.config.bot.upvote_emoji:
             async with self.bot.db_pool.acquire() as conn:
                 conn: asyncpg.Connection
                 await conn.execute(
@@ -85,7 +91,7 @@ class Karma(commands.Cog):
                     payload.user_id,
                 )
             logger.info(f"{payload.member.name} upvoted message {payload.message_id}")
-        elif payload.emoji == self.bot.config.karma.downvote_emoji:
+        elif payload.emoji == self.bot.config.bot.downvote_emoji:
             async with self.bot.db_pool.acquire() as conn:
                 conn: asyncpg.Connection
                 await conn.execute(
@@ -97,12 +103,15 @@ class Karma(commands.Cog):
 
     @commands.Cog.listener()
     async def on_raw_reaction_remove(self, payload: RawReactionActionEvent):
-        if payload.channel_id not in self.bot.config.karma.channels:
+        if (
+            payload.channel_id
+            not in self.bot.config.guild[payload.guild_id].karma_channels
+        ):
             return
         if payload.guild_id is None:
             return
 
-        if payload.emoji == self.bot.config.karma.upvote_emoji:
+        if payload.emoji == self.bot.config.bot.upvote_emoji:
             async with self.bot.db_pool.acquire() as conn:
                 conn: asyncpg.Connection
                 # To not allow users to remove their own upvote, we need to check if the user is the author of the message.
@@ -117,7 +126,7 @@ class Karma(commands.Cog):
             logger.debug(
                 f"User id {payload.user_id} removed upvote from message id {payload.message_id}"
             )
-        elif payload.emoji == self.bot.config.karma.downvote_emoji:
+        elif payload.emoji == self.bot.config.bot.downvote_emoji:
             async with self.bot.db_pool.acquire() as conn:
                 conn: asyncpg.Connection
                 await conn.execute(
