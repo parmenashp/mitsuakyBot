@@ -34,6 +34,8 @@ class Invite(commands.Cog):
     async def cog_load(self) -> None:
         # Cache the invites for resolving which invite a member used to join a server
         logger.info("cogs.invite loaded")
+
+        await self.bot.wait_until_ready()
         logger.debug("Caching invites")
         for guild in self.bot.guilds:
             await self._update_invite_cache(guild)
