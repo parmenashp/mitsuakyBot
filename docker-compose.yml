@@ -7,6 +7,10 @@ services:
     environment:
       DISCORD_PREFIX: ">"
       DISCORD_TOKEN:
+      POSTGRES_USER: mitsuaky
+      POSTGRES_HOST: postgres
+      POSTGRES_DB: mitsuakybot
+      POSTGRES_PASSWORD:
     depends_on:
       postgres:
         condition: service_healthy
