@@ -44,6 +44,9 @@ class Karma(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message) -> None:
+        if message.guild is None:
+            return
+
         if (
             message.channel.id
             not in self.bot.config.guild[message.guild.id].karma_channels
@@ -72,6 +75,9 @@ class Karma(commands.Cog):
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload: RawReactionActionEvent):
+        if payload.guild_id is None:
+            return
+
         if (
             payload.channel_id
             not in self.bot.config.guild[payload.guild_id].karma_channels
@@ -103,6 +109,9 @@ class Karma(commands.Cog):
 
     @commands.Cog.listener()
     async def on_raw_reaction_remove(self, payload: RawReactionActionEvent):
+        if payload.guild_id is None:
+            return
+
         if (
             payload.channel_id
             not in self.bot.config.guild[payload.guild_id].karma_channels
