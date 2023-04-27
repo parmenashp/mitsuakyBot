@@ -29,9 +29,6 @@ create table if not exists public.bot_config
 	dev_guild_id bigint
 );
 
-revoke all on public.bot_config from public;
-grant select, update on public.bot_config to public;
-
 insert into public.bot_config (initial_extensions, upvote_emoji, downvote_emoji, dev_guild_id) values (null, null, null, null);
 
 create table if not exists public.invites
