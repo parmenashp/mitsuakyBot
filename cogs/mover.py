@@ -16,6 +16,7 @@ class Mover(commands.Cog):
         name="move-all",
         description="Move all users from one voice channel to another.",
     )
+    @app_commands.guild_only()
     @app_commands.default_permissions(manage_channels=True)
     async def move_all(
         self,
@@ -78,11 +79,11 @@ class Mover(commands.Cog):
             ephemeral=True,
         )
 
+        total_members = len(from_channel.members)
         futures = [member.move_to(to_channel) for member in from_channel.members]
         results = await asyncio.gather(*futures, return_exceptions=True)
 
         moved_members = results.count(None)
-        total_members = len(from_channel.members)
         await interaction.edit_original_response(
             content=f"Moved {moved_members} of {total_members} members from {from_channel.mention} to {to_channel.mention}."
         )

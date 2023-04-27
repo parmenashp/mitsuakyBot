@@ -126,10 +126,10 @@ class Invite(commands.Cog):
     @commands.Cog.listener()
     async def on_invite_delete(self, invite: discord.Invite) -> None:
         # This is a complicated situation. When a invite reaches the max uses, it is deleted
-        # and triggers this event. But the this is, discord send the delete_invite event before
+        # and triggers this event. But the thing is, discord send the delete_invite event before
         # the event of a member joining the guild, so if we update the cache here, before processing
-        # the member join event, the invite will be missing. The best easy solution that fits my needs
-        # i found is to wait a bit before updating the cache, to wait for the member join event to be processed.
+        # the member join event, the invite will be missing. The easy solution i found that fits my needs
+        # is to wait a bit before updating the cache to wait for the member join event to be processed.
         logger.debug(
             f"Invite deleted: {invite.code} for guild {invite.guild}, waiting for potential member join event"
         )
