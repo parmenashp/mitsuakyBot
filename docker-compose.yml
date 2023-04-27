@@ -1,23 +1,16 @@
 version: "3.9"
 services:
-  
   mitsuakybot:
     build: .
-    image: mitsuaky/mitsuakybot
-    container_name: mitsuakybot
     restart: unless-stopped
-    env_file:
-      - .env.prod
+    pull_policy: build
     depends_on:
       postgres:
         condition: service_healthy
 
   postgres:
     image: postgres:14
-    container_name: postgres
     restart: unless-stopped
-    env_file:
-      - .env.prod
     ports:
       - "5432:5432"
     volumes:
@@ -28,4 +21,3 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
-    
