@@ -135,9 +135,6 @@ class Invite(commands.Cog):
         )
         await asyncio.sleep(1)
         await self._handle_invite_change(invite)
-        async with self.bot.db_pool.acquire() as conn:
-            conn: asyncpg.Connection
-            await conn.execute("DELETE FROM invites WHERE code = $1", invite.code)
 
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member) -> None:

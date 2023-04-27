@@ -30,11 +30,3 @@ create table if not exists public.bot_config
 );
 
 insert into public.bot_config (initial_extensions, upvote_emoji, downvote_emoji, dev_guild_id) values (null, null, null, null);
-
-create table if not exists public.invites
-(
-	invite_code text not null
-		constraint invites_pk
-			primary key,
-	created_by bigint not null
-);
