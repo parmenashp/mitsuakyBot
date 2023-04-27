@@ -30,12 +30,18 @@ class Invite(commands.Cog):
         self.bot = bot
         self.invites: dict[int, list[discord.Invite]] = {}
         self.lock = asyncio.Lock()
+        self.ready = False
 
     async def cog_load(self) -> None:
         # Cache the invites for resolving which invite a member used to join a server
         logger.info("cogs.invite loaded")
 
-        await self.bot.wait_until_ready()
+    @commands.Cog.listener()
+    async def on_ready(self) -> None:
+        if self.ready:
+            return
+
+        self.ready = True
         logger.debug("Caching invites")
         for guild in self.bot.guilds:
             await self._update_invite_cache(guild)
