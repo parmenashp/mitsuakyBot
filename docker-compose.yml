@@ -14,10 +14,13 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - ./data:/var/lib/postgresql/data
+      - postgres-data:/var/lib/postgresql/data
       - ./postgres/schema.sql:/docker-entrypoint-initdb.d/schema.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U mitsuaky -d mitsuakybot"]
       interval: 5s
       timeout: 5s
       retries: 5
+
+volumes:
+  postgres-data:
