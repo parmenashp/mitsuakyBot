@@ -1,7 +1,6 @@
 from typing import TYPE_CHECKING
 
 import asyncio
-import asyncpg
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -112,9 +111,7 @@ class Invite(commands.Cog):
 
         raise InviteNotFound("An invite with this code was not found")
 
-    def find_used_invite(
-        self, after: list[discord.Invite], guild_id: int
-    ) -> discord.Invite | None:
+    def find_used_invite(self, after: list[discord.Invite], guild_id: int) -> discord.Invite | None:
         # In case of invites that reached the max uses, the invite doesn't exist anymore
         # So we need to check if after the member joined the guild, the invite still exists
         invite = set(self.invites[guild_id]).difference(after)
@@ -147,9 +144,8 @@ class Invite(commands.Cog):
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member) -> None:
         async with self.lock:
-            try:
-                channel_id = self.bot.config.guild[member.guild.id].invite_log_channel
-            except AttributeError:
+            channel_id = self.bot.config.guild[member.guild.id].invite_log_channel
+            if channel_id is None:
                 return
 
             inviter = None
@@ -159,20 +155,15 @@ class Invite(commands.Cog):
                 self.invites[member.guild.id] = invites_after
                 if used_invite is not None and used_invite.inviter is not None:
                     inviter = used_invite.inviter
-                    logger.info(
-                        f"Member {member.name} joined in {member.guild.name} invited by {inviter.name}"
-                    )
+                    logger.info(f"Member {member.name} joined in {member.guild.name} invited by {inviter.name}")
                 else:
-                    logger.info(
-                        f"Member {member.name} joined in {member.guild.name} but could not resolve inviter"
-                    )
+                    logger.info(f"Member {member.name} joined in {member.guild.name} but could not resolve inviter")
 
             embed = discord.Embed(color=discord.Colour.green())
             embed.set_thumbnail(url=member.display_avatar.with_static_format("png"))
             embed.title = "Member joined"
             embed.description = (
-                f"{member.mention} joined the guild.\n\n"
-                f"Invited by {inviter.mention if inviter else 'unknown'}"
+                f"{member.mention} joined the guild.\n\n" f"Invited by {inviter.mention if inviter else 'unknown'}"
             )
 
             channel = self.bot.get_channel(channel_id)

@@ -1,24 +1,24 @@
 import asyncio
 
-import asyncpg
+import prisma
 import discord
 from aiohttp import ClientSession
 from discord.ext import commands
 from loguru import logger
 
-from utils.config import Config
-from utils.context import MitsuakyContext
-from utils.logging import setup_logger
+from core.config import Config
+from core.context import MitsuakyContext
+from core.logging import setup_logger
 
 
 class MitBot(commands.Bot):
     def __init__(
         self,
         config: Config,
-        db_pool: asyncpg.Pool,
+        prisma: prisma.Prisma,
         web_client: ClientSession,
     ):
-        self.db_pool = db_pool
+        self.prisma = prisma
         self.web_client = web_client
         self.config = config
 
@@ -64,9 +64,7 @@ class MitBot(commands.Bot):
             else:
                 return guild
 
-    async def get_or_fetch_member(
-        self, guild: discord.Guild | int, member_id: int
-    ) -> discord.Member | None:
+    async def get_or_fetch_member(self, guild: discord.Guild | int, member_id: int) -> discord.Member | None:
         """Looks up a member in cache or fetches if not found.
         Parameters
         -----------
@@ -123,21 +121,12 @@ class MitBot(commands.Bot):
 
 
 async def main():
-    setup_logger()  # setup loguru
+    setup_logger()
     config = Config()
-    pool_kwargs = {
-        "user": config.db.username,
-        "password": config.db.password,
-        "database": config.db.database_name,
-        "host": config.db.host,
-        "port": config.db.port,
-        "command_timeout": 30,
-    }
-
-    async with asyncpg.create_pool(**pool_kwargs) as pool:
+    async with prisma.Prisma() as db:
         async with ClientSession() as aio_client:
-            await config.initialize(pool)
-            async with MitBot(config, pool, aio_client) as bot:
+            await config.initialize(db)
+            async with MitBot(config, db, aio_client) as bot:
                 # always load jishaku to have at least basic remote control/debug
                 await bot.load_extension("jishaku")
                 await bot.start(config.bot.token)

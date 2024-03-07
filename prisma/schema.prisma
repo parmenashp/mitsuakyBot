@@ -1,0 +1,53 @@
+datasource db {
+    provider = "postgresql"
+    url      = env("POSTGRES_DSN")
+}
+
+generator client {
+    provider             = "prisma-client-py"
+    recursive_type_depth = 5
+}
+
+model KarmaMessage {
+    message_id BigInt  @id
+    author_id  BigInt
+    upvotes    Int     @default(0)
+    downvotes  Int     @default(0)
+    channel_id BigInt
+    author     User    @relation(fields: [author_id], references: [id])
+    channel    Channel @relation(fields: [channel_id], references: [id])
+
+    @@map("karma_messages")
+}
+
+model GuildConfig {
+    guild_id           BigInt   @id
+    karma_channels     BigInt[]
+    invite_log_channel BigInt?
+
+    @@map("guilds_config")
+}
+
+model BotConfig {
+    initial_extensions String[]
+    upvote_emoji       String?
+    downvote_emoji     String?
+    dev_guild_id       BigInt?
+
+    @@unique([initial_extensions])
+    @@map("bot_config")
+}
+
+model User {
+    id    BigInt         @id
+    karma KarmaMessage[]
+
+    @@map("users")
+}
+
+model Channel {
+    id    BigInt         @id
+    karma KarmaMessage[]
+
+    @@map("channels")
+}
