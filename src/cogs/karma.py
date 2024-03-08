@@ -13,6 +13,12 @@ class Karma(commands.Cog):
     def __init__(self, bot: "MitBot") -> None:
         self.bot = bot
 
+    async def cog_load(self) -> None:
+        logger.info("Loading Karma cog")
+
+    async def cog_unload(self) -> None:
+        logger.info("Unloading Karma cog")
+
     @app_commands.command()
     async def karma(self, interaction: discord.Interaction, member: discord.Member | None = None) -> None:
         """Get the karma of a user."""

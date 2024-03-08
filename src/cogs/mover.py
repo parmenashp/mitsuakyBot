@@ -3,6 +3,7 @@ from discord.ext import commands
 from discord import app_commands
 from typing import TYPE_CHECKING
 import discord
+from loguru import logger
 
 if TYPE_CHECKING:
     from src.main import MitBot
@@ -11,6 +12,12 @@ if TYPE_CHECKING:
 class Mover(commands.Cog):
     def __init__(self, bot: "MitBot") -> None:
         self.bot = bot
+
+    async def cog_load(self) -> None:
+        logger.info("Loading Mover cog")
+
+    async def cog_unload(self) -> None:
+        logger.info("Unloading Mover cog")
 
     @app_commands.command(
         name="move-all",

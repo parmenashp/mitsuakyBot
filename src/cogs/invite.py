@@ -38,8 +38,10 @@ class Invite(commands.Cog):
         self.ready = False
 
     async def cog_load(self) -> None:
-        # Cache the invites for resolving which invite a member used to join a server
-        logger.info("cogs.invite loaded")
+        logger.info("Loading Invite cog")
+
+    async def cog_unload(self) -> None:
+        logger.info("Unloading Invite cog")
 
     @commands.Cog.listener()
     async def on_ready(self) -> None:
