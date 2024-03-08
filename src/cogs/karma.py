@@ -15,15 +15,13 @@ class Karma(commands.Cog):
 
     @app_commands.command()
     async def karma(self, interaction: discord.Interaction, member: discord.Member | None = None) -> None:
-        """
-        Get the karma of a user.
-        """
-
+        """Get the karma of a user."""
         if member is None:
             user = interaction.user
         else:
             user = member
 
+        logger.info(f"Retrieving karma for user {user.name}")
         prisma_user = await self.bot.prisma.user.find_unique(where={"id": user.id}, include={"karma": True})
         if hasattr(prisma_user, "karma"):
             karma = sum(message.upvotes - message.downvotes for message in prisma_user.karma)  # type: ignore
@@ -39,7 +37,6 @@ class Karma(commands.Cog):
     async def on_message(self, message: discord.Message) -> None:
         if message.guild is None:
             return
-
         if message.channel.id not in self.bot.config.guild[message.guild.id].karma_channels:
             return
         if message.author.bot:
@@ -47,11 +44,12 @@ class Karma(commands.Cog):
         if not (message.attachments or message.content.startswith(("https://", "http://"))):
             return
 
+        logger.info(
+            f"Adding karma reactions to message {message.id!r} by {message.author.name} on channel #{message.channel}"
+        )
+
         await message.add_reaction(self.bot.config.bot.upvote_emoji)
         await message.add_reaction(self.bot.config.bot.downvote_emoji)
-
-        # Prisma "createOrUpdate" is not implemented yet, I need to do this manually
-        # check https://github.com/RobertCraigie/prisma-client-py/issues/754
 
         await self.bot.prisma.user.upsert(
             where={"id": message.author.id},
@@ -70,8 +68,6 @@ class Karma(commands.Cog):
                 "channel_id": message.channel.id,
             }
         )
-
-        logger.info(f"Added karma reactions to {message.id!r} by {message.author.name} on channel #{message.channel}")
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload: RawReactionActionEvent):
@@ -96,6 +92,8 @@ class Karma(commands.Cog):
             )
             if karma_message > 0:
                 logger.info(f"User {payload.member.name} upvoted message id {payload.message_id!r}")
+            else:
+                logger.info(f"User {payload.member.name} tried to upvote his own message id {payload.message_id!r}")
 
         elif payload.emoji == self.bot.config.bot.downvote_emoji:
             karma_message = await self.bot.prisma.karmamessage.update_many(
@@ -109,6 +107,8 @@ class Karma(commands.Cog):
             )
             if karma_message > 0:
                 logger.info(f"User {payload.member.name} downvoted message id {payload.message_id!r}")
+            else:
+                logger.info(f"User {payload.member.name} tried to downvote his own message id {payload.message_id!r}")
 
     @commands.Cog.listener()
     async def on_raw_reaction_remove(self, payload: RawReactionActionEvent):
@@ -130,6 +130,11 @@ class Karma(commands.Cog):
             )
             if karma_message > 0:
                 logger.info(f"User id {payload.user_id!r} removed upvote from message id {payload.message_id!r}")
+            else:
+                logger.info(
+                    f"User id {payload.user_id!r} tried to remove upvote from his own message id {payload.message_id!r}"
+                )
+
         elif payload.emoji == self.bot.config.bot.downvote_emoji:
             karma_message = await self.bot.prisma.karmamessage.update_many(
                 where={
@@ -142,6 +147,10 @@ class Karma(commands.Cog):
             )
             if karma_message > 0:
                 logger.info(f"User id {payload.user_id!r} removed downvote from message id {payload.message_id!r}")
+            else:
+                logger.info(
+                    f"User id {payload.user_id!r} tried to remove downvote from his own message id {payload.message_id!r}"
+                )
 
 
 async def setup(bot: "MitBot"):

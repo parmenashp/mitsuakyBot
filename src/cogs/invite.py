@@ -8,7 +8,7 @@ from loguru import logger
 
 
 if TYPE_CHECKING:
-    from bot import MitBot
+    from src.main import MitBot
 
 MAX_AGE_SECONDS = 60 * 60 * 24  # 1 day
 
@@ -18,6 +18,12 @@ MAX_AGE_SECONDS = 60 * 60 * 24  # 1 day
 # Manage Channels
 # Manage Guild
 # Create Invites
+
+REQUIRED_PERMISSIONS = discord.Permissions(
+    manage_channels=True,
+    manage_guild=True,
+    create_instant_invite=True,
+)
 
 
 class InviteNotFound(Exception):  # Unessential, but I like it.
@@ -85,9 +91,15 @@ class Invite(commands.Cog):
 
     async def _update_invite_cache(self, guild: discord.Guild) -> None:
         try:
+            if guild.unavailable:
+                return logger.debug(f"Guild {guild.name} is unavailable, skipping invite cache update")
             self.invites[guild.id] = await guild.invites()
             logger.debug(f"Updated cached invites for guild {guild.name}")
         except discord.HTTPException:
+            if not guild.me.guild_permissions >= REQUIRED_PERMISSIONS:
+                logger.warning(f"Bot does not have the required permissions to cache invites for guild {guild.name}")
+                return
+
             logger.warning(f"Failed to cache invites for guild {guild.name}")
 
     async def _handle_invite_change(self, invite: discord.Invite):

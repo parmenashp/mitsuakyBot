@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 import discord
 
 if TYPE_CHECKING:
-    from bot import MitBot
+    from src.main import MitBot
 
 
 class Mover(commands.Cog):
@@ -27,6 +27,9 @@ class Mover(commands.Cog):
         """
         Move all users from one voice channel to another.
         """
+        if not isinstance(interaction.user, discord.Member) or interaction.guild is None:
+            return  # doing this so pyright stops whining.
+
         if from_channel is None:
             await interaction.response.send_message(
                 "Origin channel not found.",
@@ -97,8 +100,7 @@ class Mover(commands.Cog):
 
         if erros:
             await interaction.followup.send(
-                f"While moving members, the following errors occurred:\n\n"
-                + "\n".join(erros)
+                f"While moving members, the following errors occurred:\n\n" + "\n".join(erros)
             )
 
 
