@@ -1,16 +1,12 @@
 version: "3.9"
+
 services:
-  mitsuakybot:
+  bot:
     build: .
     restart: unless-stopped
     pull_policy: build
     environment:
-      DISCORD_PREFIX: ">"
-      DISCORD_TOKEN:
-      POSTGRES_USER: mitsuaky
-      POSTGRES_HOST: postgres
-      POSTGRES_DB: mitsuakybot
-      POSTGRES_PASSWORD:
+      - DOPPLER_TOKEN
     depends_on:
       postgres:
         condition: service_healthy
@@ -19,18 +15,16 @@ services:
     image: postgres:14
     restart: unless-stopped
     environment:
-      POSTGRES_USER: mitsuaky
-      POSTGRES_HOST: postgres
-      POSTGRES_DB: mitsuakybot
-      POSTGRES_PASSWORD:
+      - POSTGRES_USER
+      - POSTGRES_PASSWORD
+      - POSTGRES_DB
     ports:
-      - "5432:5432"
+      - 5432:5432
     volumes:
       - postgres-data:/var/lib/postgresql/data
-      - ./postgres/schema.sql:/docker-entrypoint-initdb.d/schema.sql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U mitsuaky -d mitsuakybot"]
-      interval: 5s
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 3s
       timeout: 5s
       retries: 5
 

@@ -4,6 +4,7 @@ services:
   bot:
     build: .
     restart: unless-stopped
+    pull_policy: build
     environment:
       - DOPPLER_TOKEN
     develop:
