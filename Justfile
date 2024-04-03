@@ -5,7 +5,7 @@ run:
 	doppler run -- docker compose -f docker-compose.dev.yml up
 
 run-prod: pushdb-prod
-	doppler run -- docker compose -f docker-compose.yml up
+	doppler run -- docker compose -f docker-compose.yml up -d
 
 build:
 	doppler run -- docker compose -f docker-compose.dev.yml build

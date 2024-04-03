@@ -9,13 +9,11 @@ generator client {
 }
 
 model KarmaMessage {
-    message_id BigInt  @id
+    message_id BigInt @id
     author_id  BigInt
-    upvotes    Int     @default(0)
-    downvotes  Int     @default(0)
+    upvotes    Int    @default(0)
+    downvotes  Int    @default(0)
     channel_id BigInt
-    author     User    @relation(fields: [author_id], references: [id])
-    channel    Channel @relation(fields: [channel_id], references: [id])
 
     @@map("karma_messages")
 }
@@ -23,7 +21,6 @@ model KarmaMessage {
 model Invite {
     code       String @id
     inviter_id BigInt
-    inviter    User   @relation(fields: [inviter_id], references: [id])
 
     @@map("invites")
 }
@@ -34,19 +31,4 @@ model GuildConfig {
     invite_log_channel BigInt?
 
     @@map("guilds_config")
-}
-
-model User {
-    id      BigInt         @id
-    karma   KarmaMessage[]
-    invites Invite[]
-
-    @@map("users")
-}
-
-model Channel {
-    id    BigInt         @id
-    karma KarmaMessage[]
-
-    @@map("channels")
 }
