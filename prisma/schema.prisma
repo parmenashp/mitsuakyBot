@@ -36,16 +36,6 @@ model GuildConfig {
     @@map("guilds_config")
 }
 
-model BotConfig {
-    initial_extensions String[]
-    upvote_emoji       String?
-    downvote_emoji     String?
-    dev_guild_id       BigInt?
-
-    @@unique([initial_extensions])
-    @@map("bot_config")
-}
-
 model User {
     id      BigInt         @id
     karma   KarmaMessage[]
