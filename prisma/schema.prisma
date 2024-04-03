@@ -20,6 +20,14 @@ model KarmaMessage {
     @@map("karma_messages")
 }
 
+model Invite {
+    code       String @id
+    inviter_id BigInt
+    inviter    User   @relation(fields: [inviter_id], references: [id])
+
+    @@map("invites")
+}
+
 model GuildConfig {
     guild_id           BigInt   @id
     karma_channels     BigInt[]
@@ -39,8 +47,9 @@ model BotConfig {
 }
 
 model User {
-    id    BigInt         @id
-    karma KarmaMessage[]
+    id      BigInt         @id
+    karma   KarmaMessage[]
+    invites Invite[]
 
     @@map("users")
 }

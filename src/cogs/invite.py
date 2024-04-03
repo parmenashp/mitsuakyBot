@@ -86,6 +86,14 @@ class Invite(commands.Cog):
 
         invite = await channel.create_invite(max_age=MAX_AGE_SECONDS, max_uses=1)
 
+        await self.bot.ensure_user_in_db(interaction.user.id)
+        await self.bot.prisma.invite.create(
+            data={
+                "code": invite.code,
+                "inviter_id": interaction.user.id,
+            }
+        )
+
         await interaction.response.send_message(
             f"Created a new invite valid for 1 day with 1 use.\n{invite.url}",
             ephemeral=True,
@@ -98,7 +106,7 @@ class Invite(commands.Cog):
             self.invites[guild.id] = await guild.invites()
             logger.debug(f"Updated cached invites for guild {guild.name}")
         except discord.HTTPException:
-            if not guild.me.guild_permissions >= REQUIRED_PERMISSIONS:
+            if not guild.me.guild_permissions > REQUIRED_PERMISSIONS:
                 logger.warning(f"Bot does not have the required permissions to cache invites for guild {guild.name}")
                 return
 
@@ -125,19 +133,26 @@ class Invite(commands.Cog):
 
         raise InviteNotFound("An invite with this code was not found")
 
-    def find_used_invite(self, after: list[discord.Invite], guild_id: int) -> discord.Invite | None:
+    async def find_inviter(self, after: list[discord.Invite], guild_id: int) -> discord.User | None:
         # In case of invites that reached the max uses, the invite doesn't exist anymore
         # So we need to check if after the member joined the guild, the invite still exists
-        invite = set(self.invites[guild_id]).difference(after)
-        if len(invite) == 1:
-            return invite.pop()
+        invite_diff: set[discord.Invite] = set(self.invites[guild_id]).difference(after)
+        if len(invite_diff) == 1:
+            invite = invite_diff.pop()
+            if invite.inviter != self.bot.user:
+                return invite.inviter
+
+            db_invite = await self.bot.prisma.invite.delete(where={"code": invite.code})
+            if db_invite is None:
+                return
+            return self.bot.get_user(db_invite.inviter_id)
 
         # If the invite still present, we use the other method to find the invite
         # Check which invite has a different uses count than the invite in the cache
         for invite in after:
             try:
                 if invite.uses < self.find_invite_by_code(invite.code, guild_id).uses:  # type: ignore
-                    return invite
+                    return invite.inviter
 
             except InviteNotFound:
                 continue
@@ -162,13 +177,12 @@ class Invite(commands.Cog):
             if channel_id is None:
                 return
 
-            inviter = None
+            inviter: discord.User | None
             if member.guild.id in self.invites:
                 invites_after = await member.guild.invites()
-                used_invite = self.find_used_invite(invites_after, member.guild.id)
+                inviter = await self.find_inviter(invites_after, member.guild.id)
                 self.invites[member.guild.id] = invites_after
-                if used_invite is not None and used_invite.inviter is not None:
-                    inviter = used_invite.inviter
+                if inviter is not None and inviter is not None:
                     logger.info(f"Member {member.name} joined in {member.guild.name} invited by {inviter.name}")
                 else:
                     logger.info(f"Member {member.name} joined in {member.guild.name} but could not resolve inviter")

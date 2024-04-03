@@ -41,6 +41,26 @@ class MitBot(commands.Bot):
             enable_debug_events=True,
         )
 
+    async def ensure_user_in_db(self, user_id: int) -> prisma.models.User:
+        """Ensures the user is in the database. If not, it will create it.
+        Parameters
+        -----------
+        user_id: int
+            The user id of the User to ensure in the database.
+
+        Returns
+        --------
+        prisma.models.User
+            The created or updated User record
+        """
+        return await self.prisma.user.upsert(
+            where={"id": user_id},
+            data={
+                "create": {"id": user_id},
+                "update": {},
+            },
+        )
+
     async def get_or_fetch_guild(self, guild_id: int) -> discord.Guild | None:
         """Looks up a guild in cache or fetches if not found.
         Parameters
