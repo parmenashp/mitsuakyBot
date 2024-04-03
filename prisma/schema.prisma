@@ -15,6 +15,7 @@ model KarmaMessage {
     downvotes  Int    @default(0)
     channel_id BigInt
 
+    @@index([author_id])
     @@map("karma_messages")
 }
 
