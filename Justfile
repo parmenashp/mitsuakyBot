@@ -1,5 +1,5 @@
 default:
-	@just --list
+	@just --list --unsorted
 
 run:
 	doppler run -- docker compose -f docker-compose.dev.yml up
