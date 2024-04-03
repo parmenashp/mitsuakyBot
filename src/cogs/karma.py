@@ -28,14 +28,15 @@ class Karma(commands.Cog):
             user = member
 
         logger.info(f"Retrieving karma for user {user.name}")
-        prisma_user = await self.bot.prisma.user.find_unique(where={"id": user.id}, include={"karma": True})
-        if hasattr(prisma_user, "karma"):
-            karma = sum(message.upvotes - message.downvotes for message in prisma_user.karma)  # type: ignore
-        else:
-            karma = 0
+        messages = await self.bot.prisma.karmamessage.find_many(
+            where={
+                "author_id": user.id,
+            },
+        )
+        sum_karma = sum([message.upvotes - message.downvotes for message in messages])
 
         await interaction.response.send_message(
-            f"{user.mention} tem {karma} de karma.",
+            f"{user.mention} tem {sum_karma} de karma.",
             allowed_mentions=discord.AllowedMentions.none(),  # avoid ping the user
         )
 
@@ -56,16 +57,6 @@ class Karma(commands.Cog):
 
         await message.add_reaction(self.bot.config.bot.upvote_emoji)
         await message.add_reaction(self.bot.config.bot.downvote_emoji)
-
-        await self.bot.prisma.user.upsert(
-            where={"id": message.author.id},
-            data={"create": {"id": message.author.id}, "update": {}},
-        )
-
-        await self.bot.prisma.channel.upsert(
-            where={"id": message.channel.id},
-            data={"create": {"id": message.channel.id}, "update": {}},
-        )
 
         await self.bot.prisma.karmamessage.create(
             data={

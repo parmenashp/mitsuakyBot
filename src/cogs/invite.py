@@ -86,7 +86,6 @@ class Invite(commands.Cog):
 
         invite = await channel.create_invite(max_age=MAX_AGE_SECONDS, max_uses=1)
 
-        await self.bot.ensure_user_in_db(interaction.user.id)
         await self.bot.prisma.invite.create(
             data={
                 "code": invite.code,
