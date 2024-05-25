@@ -34,6 +34,14 @@ class BotConfig:
         self.upvote_emoji = get_emoji(os.environ["UPVOTE_EMOJI"], "⬆️")
         self.downvote_emoji = get_emoji(os.environ["DOWNVOTE_EMOJI"], "⬇️")
         self.dev_guild_id = os.environ["DEV_GUILD_ID"]
+        self.musky_guild_id = int(os.environ["MUSKY_GUILD_ID"])
+
+
+class Consts:
+    def __init__(self) -> None:
+        self.furry_role_id = 602653863111163904
+        self.furry_minor_role_id = 1093604015306190989
+        self.non_furry_role_id = 602655445428994100
 
 
 class DatabaseConfig:
@@ -71,6 +79,7 @@ class Config:
         self.ready = False
         self.db = DatabaseConfig()
         self.bot = BotConfig()
+        self.consts = Consts()
 
     async def initialize(self, db: prisma.Prisma):
         """Initialize all the configs from the environment variables and database."""

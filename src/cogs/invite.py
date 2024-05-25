@@ -1,3 +1,4 @@
+import enum
 from typing import TYPE_CHECKING
 
 import asyncio
@@ -30,6 +31,40 @@ class InviteNotFound(Exception):  # Unessential, but I like it.
     pass
 
 
+class VerifyRoles(enum.Enum):
+    FURRY = enum.auto()
+    FURRY_MINOR = enum.auto()
+    NON_FURRY = enum.auto()
+
+
+class GiveVerifyRole(discord.ui.View):
+    def __init__(self):
+        super().__init__()
+        self.role: VerifyRoles
+        self.verifier: discord.Member
+
+    @discord.ui.button(label="Furry")
+    async def furry_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        self.role = VerifyRoles.FURRY
+        assert isinstance(interaction.user, discord.Member)
+        self.verifier: discord.Member = interaction.user
+        self.stop()
+
+    @discord.ui.button(label="Furry -18")
+    async def furry_minor_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        self.role = VerifyRoles.FURRY_MINOR
+        assert isinstance(interaction.user, discord.Member)
+        self.verifier: discord.Member = interaction.user
+        self.stop()
+
+    @discord.ui.button(label="Non-furry")
+    async def non_furry_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        self.role = VerifyRoles.NON_FURRY
+        assert isinstance(interaction.user, discord.Member)
+        self.verifier: discord.Member = interaction.user
+        self.stop()
+
+
 class Invite(commands.Cog):
     def __init__(self, bot: "MitBot") -> None:
         self.bot = bot
@@ -52,6 +87,20 @@ class Invite(commands.Cog):
         logger.debug("Caching invites")
         for guild in self.bot.guilds:
             await self._update_invite_cache(guild)
+
+        self.musky_guild = self.bot.get_guild(self.bot.config.bot.musky_guild_id)
+        if self.musky_guild:
+            self.role_furry = self.musky_guild.get_role(self.bot.config.consts.furry_role_id)
+            if not self.role_furry:
+                return logger.error("Furry role not found")
+            self.role_furry_minor = self.musky_guild.get_role(self.bot.config.consts.furry_minor_role_id)
+            if not self.role_furry_minor:
+                return logger.error("Furry -18 role not found")
+            self.role_non_furry = self.musky_guild.get_role(self.bot.config.consts.non_furry_role_id)
+            if not self.role_non_furry:
+                return logger.error("Non-furry role not found")
+        else:
+            return logger.warning("Musky guild not found")
 
     @app_commands.command()
     @app_commands.guild_only()
@@ -194,8 +243,44 @@ class Invite(commands.Cog):
             )
 
             channel = self.bot.get_channel(channel_id)
-            if isinstance(channel, discord.TextChannel):
+            if not isinstance(channel, discord.TextChannel):
+                return logger.warning(f"Invite log channel not found or not a text channel in {member.guild.name}")
+
+            if member.guild != self.musky_guild:
                 await channel.send(embed=embed)
+                return
+
+            view = GiveVerifyRole()
+            embed.set_footer(text="Select a role to verify the user:")
+            message = await channel.send(embed=embed, view=view, allowed_mentions=discord.AllowedMentions.none())
+            await view.wait()
+            if view.role == VerifyRoles.FURRY:
+                role = self.role_furry
+            elif view.role == VerifyRoles.FURRY_MINOR:
+                role = self.role_furry_minor
+            elif view.role == VerifyRoles.NON_FURRY:
+                role = self.role_non_furry
+            else:
+                return logger.error("Invalid role selected in the view")
+
+            if role is None:
+                await channel.send("[Error] Role not found in the guild", delete_after=10)
+                logger.error("Role not found in the musky guild")
+            elif role in member.roles:
+                await channel.send(
+                    f"Member {member.mention} already has the role {role.mention}",
+                    delete_after=10,
+                    allowed_mentions=discord.AllowedMentions.none(),
+                )
+                logger.info(f"Member {member.name} already has the role {role.name} in {member.guild.name}")
+            else:
+                logger.info(
+                    f"Member {member.name} verified as {role.name} by {view.verifier.name} in {member.guild.name}"
+                )
+                await member.add_roles(role, reason=f"User verified by {view.verifier.name}")
+                embed.description += f"\nVerified by: {view.verifier.mention} as {role.mention}"
+            embed.remove_footer()
+            await message.edit(embed=embed, view=None, allowed_mentions=discord.AllowedMentions.none())
 
 
 async def setup(bot: "MitBot") -> None:
