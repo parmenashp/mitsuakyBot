@@ -1,9 +1,6 @@
 name: Push to Docker Hub
 
 on:
-  pull_request:
-    branches:
-      - "main"
   push:
     branches:
       - "main"
@@ -25,5 +22,5 @@ jobs:
         name: Build and push
         uses: docker/build-push-action@v6
         with:
-          push: false
+          push: true
           tags: ${{ vars.DOCKERHUB_USERNAME }}/mitsuakybot:latest
