@@ -44,19 +44,20 @@ class Karma(commands.Cog):
     async def on_message(self, message: discord.Message) -> None:
         if message.guild is None:
             return
-        if message.channel.id not in self.bot.config.guild[message.guild.id].karma_channels:
+        if not (message.attachments or message.content.startswith(("https://", "http://"))):
             return
         if message.author.bot:
             return
-        if not (message.attachments or message.content.startswith(("https://", "http://"))):
+        guild_settings = self.bot.settings.guilds.get(message.guild.id)
+        if guild_settings is None or message.channel.id not in guild_settings.karma_channels_ids:
             return
 
         logger.info(
             f"Adding karma reactions to message {message.id!r} by {message.author.name} on channel #{message.channel}"
         )
 
-        await message.add_reaction(self.bot.config.bot.upvote_emoji)
-        await message.add_reaction(self.bot.config.bot.downvote_emoji)
+        await message.add_reaction(self.bot.settings.emojis.upvote)
+        await message.add_reaction(self.bot.settings.emojis.downvote)
 
         await self.bot.prisma.karmamessage.create(
             data={
@@ -70,14 +71,15 @@ class Karma(commands.Cog):
     async def on_raw_reaction_add(self, payload: RawReactionActionEvent):
         if payload.guild_id is None:
             return
-        if payload.channel_id not in self.bot.config.guild[payload.guild_id].karma_channels:
-            return
         if payload.member is None:
             return
         if payload.member.bot:
             return
+        guild_settings = self.bot.settings.guilds.get(payload.guild_id)
+        if guild_settings is None or payload.channel_id not in guild_settings.karma_channels_ids:
+            return
 
-        if payload.emoji == self.bot.config.bot.upvote_emoji:
+        if payload.emoji == self.bot.settings.emojis.upvote:
             karma_message = await self.bot.prisma.karmamessage.update_many(
                 where={
                     "message_id": payload.message_id,
@@ -92,7 +94,7 @@ class Karma(commands.Cog):
             else:
                 logger.info(f"User {payload.member.name} tried to upvote his own message id {payload.message_id!r}")
 
-        elif payload.emoji == self.bot.config.bot.downvote_emoji:
+        elif payload.emoji == self.bot.settings.emojis.downvote:
             karma_message = await self.bot.prisma.karmamessage.update_many(
                 where={
                     "message_id": payload.message_id,
@@ -111,11 +113,13 @@ class Karma(commands.Cog):
     async def on_raw_reaction_remove(self, payload: RawReactionActionEvent):
         if payload.guild_id is None:
             return
-        if payload.channel_id not in self.bot.config.guild[payload.guild_id].karma_channels:
+        guild_settings = self.bot.settings.guilds.get(payload.guild_id)
+        if guild_settings is None or payload.channel_id not in guild_settings.karma_channels_ids:
             return
-        # TODO: Get the user from the cache to check if it's a bot
 
-        if payload.emoji == self.bot.config.bot.upvote_emoji:
+        # To check if the user is bot, we need to get the member object. Won't be doing that here for now.
+
+        if payload.emoji == self.bot.settings.emojis.upvote:
             karma_message = await self.bot.prisma.karmamessage.update_many(
                 where={
                     "message_id": payload.message_id,
@@ -132,7 +136,7 @@ class Karma(commands.Cog):
                     f"User id {payload.user_id!r} tried to remove upvote from his own message id {payload.message_id!r}"
                 )
 
-        elif payload.emoji == self.bot.config.bot.downvote_emoji:
+        elif payload.emoji == self.bot.settings.emojis.downvote:
             karma_message = await self.bot.prisma.karmamessage.update_many(
                 where={
                     "message_id": payload.message_id,
