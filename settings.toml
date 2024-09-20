@@ -7,9 +7,9 @@ downvote = "<:downvote:995881690792742992>"
 
 [musky]
 guild_id = 602648835373793300
-furry_role_id = 602648835373793303
-furry_minor_role_id = 602648835373793302
-non_furry_role_id = 602648835373793304
+furry_role_id = 602653863111163904
+furry_minor_role_id = 1093604015306190989
+non_furry_role_id = 602655445428994100
 
 # Musky Husky
 [guilds.602648835373793300]
