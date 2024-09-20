@@ -6,21 +6,21 @@ from aiohttp import ClientSession
 from discord.ext import commands
 from loguru import logger
 
-from core.config import Config
+from core.settings import Settings
 from core.context import MitsuakyContext
-from core.logging import setup_logger
+from core.log import setup_logger
 
 
 class MitBot(commands.Bot):
     def __init__(
         self,
-        config: Config,
+        settings: Settings,
         prisma: prisma.Prisma,
         web_client: ClientSession,
     ):
         self.prisma = prisma
         self.web_client = web_client
-        self.config = config
+        self.settings = settings
 
         allowed_mentions = discord.AllowedMentions(
             roles=False,
@@ -33,7 +33,7 @@ class MitBot(commands.Bot):
         intents.members = True
 
         super().__init__(
-            command_prefix=commands.when_mentioned_or(self.config.bot.prefix),
+            command_prefix=commands.when_mentioned,
             pm_help=None,
             chunk_guilds_at_startup=False,
             allowed_mentions=allowed_mentions,
@@ -103,7 +103,7 @@ class MitBot(commands.Bot):
         return members[0]
 
     async def setup_hook(self):
-        initial_extensions = self.config.bot.initial_extensions
+        initial_extensions = self.settings.bot.initial_extensions
         if initial_extensions:
             for extension in initial_extensions:
                 try:
@@ -122,14 +122,13 @@ class MitBot(commands.Bot):
 
 async def main():
     setup_logger()
-    config = Config()
+    settings = Settings()  # type: ignore
     async with prisma.Prisma() as db:
         async with ClientSession() as aio_client:
-            await config.initialize(db)
-            async with MitBot(config, db, aio_client) as bot:
+            async with MitBot(settings, db, aio_client) as bot:
                 # always load jishaku to have at least basic remote control/debug
                 await bot.load_extension("jishaku")
-                await bot.start(config.bot.token)
+                await bot.start(settings.bot.token)
 
 
 if __name__ == "__main__":

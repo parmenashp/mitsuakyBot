@@ -1,0 +1,22 @@
+[bot]
+initial_extensions = ["cogs.karma", "cogs.invite", "cogs.mover", "cogs.tarot"]
+
+[emojis]
+upvote = "<:upvote:995881683129749504>"
+downvote = "<:downvote:995881690792742992>"
+
+[musky]
+guild_id = 602648835373793300
+furry_role_id = 602653863111163904
+furry_minor_role_id = 1093604015306190989
+non_furry_role_id = 602655445428994100
+
+# Musky Husky
+[guilds.602648835373793300]
+invite_log_channel_id = 694024511951077486
+karma_channels_ids = [
+    662757350809141320, # memes-n-stuff
+    937502804988280935, # arte-channel
+    602667661159170081, # foxy-hole
+    ]
+

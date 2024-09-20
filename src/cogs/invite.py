@@ -88,15 +88,15 @@ class Invite(commands.Cog):
         for guild in self.bot.guilds:
             await self._update_invite_cache(guild)
 
-        self.musky_guild = self.bot.get_guild(self.bot.config.bot.musky_guild_id)
+        self.musky_guild = self.bot.get_guild(self.bot.settings.musky.guild_id)
         if self.musky_guild:
-            self.role_furry = self.musky_guild.get_role(self.bot.config.consts.furry_role_id)
+            self.role_furry = self.musky_guild.get_role(self.bot.settings.musky.furry_role_id)
             if not self.role_furry:
                 return logger.error("Furry role not found")
-            self.role_furry_minor = self.musky_guild.get_role(self.bot.config.consts.furry_minor_role_id)
+            self.role_furry_minor = self.musky_guild.get_role(self.bot.settings.musky.furry_minor_role_id)
             if not self.role_furry_minor:
                 return logger.error("Furry -18 role not found")
-            self.role_non_furry = self.musky_guild.get_role(self.bot.config.consts.non_furry_role_id)
+            self.role_non_furry = self.musky_guild.get_role(self.bot.settings.musky.non_furry_role_id)
             if not self.role_non_furry:
                 return logger.error("Non-furry role not found")
         else:
@@ -221,8 +221,8 @@ class Invite(commands.Cog):
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member) -> None:
         async with self.lock:
-            channel_id = self.bot.config.guild[member.guild.id].invite_log_channel
-            if channel_id is None:
+            guild = self.bot.settings.guilds.get(member.guild.id)
+            if guild is None or guild.invite_log_channel_id is None:
                 return
 
             inviter: discord.User | None
@@ -242,7 +242,7 @@ class Invite(commands.Cog):
                 f"{member.mention} joined the guild.\n\n" f"Invited by {inviter.mention if inviter else 'unknown'}"
             )
 
-            channel = self.bot.get_channel(channel_id)
+            channel = self.bot.get_channel(guild.invite_log_channel_id)
             if not isinstance(channel, discord.TextChannel):
                 return logger.warning(f"Invite log channel not found or not a text channel in {member.guild.name}")
 
