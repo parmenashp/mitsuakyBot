@@ -38,8 +38,8 @@ class VerifyRoles(enum.Enum):
 
 
 class GiveVerifyRole(discord.ui.View):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, timeout=None) -> None:
+        super().__init__(timeout=timeout)
         self.role: VerifyRoles
         self.verifier: discord.Member
 
@@ -253,7 +253,9 @@ class Invite(commands.Cog):
             view = GiveVerifyRole()
             embed.set_footer(text="Select a role to verify the user:")
             message = await channel.send(embed=embed, view=view, allowed_mentions=discord.AllowedMentions.none())
-            await view.wait()
+            if await view.wait() is True:
+                return logger.warning("Verification view timed out")
+
             if view.role == VerifyRoles.FURRY:
                 role = self.role_furry
             elif view.role == VerifyRoles.FURRY_MINOR:
@@ -264,7 +266,7 @@ class Invite(commands.Cog):
                 return logger.error("Invalid role selected in the view")
 
             if role is None:
-                await channel.send("[Error] Role not found in the guild", delete_after=10)
+                await channel.send("[Error] Role not found in the guild")
                 logger.error("Role not found in the musky guild")
             elif role in member.roles:
                 await channel.send(
