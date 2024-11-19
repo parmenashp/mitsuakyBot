@@ -313,16 +313,17 @@ class Invite(commands.Cog):
             elif role in member.roles:
                 await channel.send(
                     f"Member {member.mention} already has the role {role.mention}",
-                    delete_after=10,
                     allowed_mentions=discord.AllowedMentions.none(),
                 )
-                logger.info(f"Member {member.name} already has the role {role.name} in {member.guild.name}")
+                logger.info(
+                    f"Member {view.verifier.name} tried to verify {member.name} as {role.name} in {member.guild.name} but the member already has the role"
+                )
             else:
                 logger.info(
                     f"Member {member.name} verified as {role.name} by {view.verifier.name} in {member.guild.name}"
                 )
                 await member.add_roles(role, reason=f"User verified by {view.verifier.name}")
-                embed.description += f"\nVerified by: {view.verifier.mention} as {role.mention}"
+                embed.description += f"\nVerified by {view.verifier.mention} as {role.mention}"
             embed.remove_footer()
             await message.edit(embed=embed, view=None, allowed_mentions=discord.AllowedMentions.none())
 
