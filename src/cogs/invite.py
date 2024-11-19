@@ -13,9 +13,8 @@ if TYPE_CHECKING:
 
 MAX_AGE_SECONDS = 60 * 60 * 24  # 1 day
 
-# ####################################################
 # For this cog to work, the bot needs,
-# besides the defualt permissions, theses permissions:
+# besides the default permissions, theses permissions:
 # Manage Channels
 # Manage Guild
 # Create Invites
@@ -25,6 +24,27 @@ REQUIRED_PERMISSIONS = discord.Permissions(
     manage_guild=True,
     create_instant_invite=True,
 )
+
+from datetime import datetime, timedelta
+
+
+def format_invite(invite: discord.Invite) -> dict:
+    if invite.max_age:
+        time_created = invite.created_at or datetime.utcnow()
+        time_remaining = (time_created + timedelta(seconds=invite.max_age)) - datetime.utcnow()
+        time_remaining_seconds = max(0, int(time_remaining.total_seconds()))
+    else:
+        time_remaining_seconds = "∞"  # Infinite duration
+
+    max_uses = invite.max_uses if invite.max_uses else "∞"
+
+    return {
+        "code": invite.code,
+        "inviter": str(invite.inviter),
+        "time_remaining": time_remaining_seconds,
+        "uses": invite.uses,
+        "max_uses": max_uses,
+    }
 
 
 class InviteNotFound(Exception):  # Unessential, but I like it.
@@ -148,11 +168,13 @@ class Invite(commands.Cog):
         )
 
     async def _update_invite_cache(self, guild: discord.Guild) -> None:
+        logger.debug(f"Updating invite cache for guild {guild.name}")
         try:
             if guild.unavailable:
-                return logger.debug(f"Guild {guild.name} is unavailable, skipping invite cache update")
-            self.invites[guild.id] = await guild.invites()
-            logger.debug(f"Updated cached invites for guild {guild.name}")
+                return logger.warning(f"Guild {guild.name} is unavailable, skipping invite cache update")
+            invites = await guild.invites()
+            self.invites[guild.id] = invites
+            logger.debug(f"Updated cached invites for guild {guild.name}: {len(invites)} invites")
         except discord.HTTPException:
             if not guild.me.guild_permissions > REQUIRED_PERMISSIONS:
                 logger.warning(f"Bot does not have the required permissions to cache invites for guild {guild.name}")
@@ -168,42 +190,60 @@ class Invite(commands.Cog):
 
     @commands.Cog.listener()
     async def on_invite_create(self, invite: discord.Invite) -> None:
-        logger.debug(f"Invite created: {invite.code} for guild {invite.guild}")
+        logger.debug(f"Invite created {format_invite(invite)} for guild {invite.guild}")
         await self._handle_invite_change(invite)
 
-    def find_invite_by_code(self, code: str, guild_id: int) -> discord.Invite:
-        try:
-            for invite in self.invites[guild_id]:
-                if invite.code == code:
-                    return invite
-        except KeyError:
-            pass  # No invites cached for this guild, treat as not found
+    async def find_inviter(
+        self, before: list[discord.Invite], after: list[discord.Invite], guild: discord.Guild
+    ) -> discord.User | None:
+        logger.debug(f"Searching for inviter in guild {guild.name}")
+        logger.debug(f"Before invites: {[format_invite(invite) for invite in before]}")
+        logger.debug(f"After invites: {[format_invite(invite) for invite in after]}")
 
-        raise InviteNotFound("An invite with this code was not found")
-
-    async def find_inviter(self, after: list[discord.Invite], guild_id: int) -> discord.User | None:
         # In case of invites that reached the max uses, the invite doesn't exist anymore
         # So we need to check if after the member joined the guild, the invite still exists
-        invite_diff: set[discord.Invite] = set(self.invites[guild_id]).difference(after)
+        invite_diff: set[discord.Invite] = set(self.invites[guild.id]).difference(after)
+        logger.debug(f"Invite diff: {[invite.code for invite in invite_diff]}")
         if len(invite_diff) == 1:
             invite = invite_diff.pop()
             if invite.inviter != self.bot.user:
+                logger.debug(f"Inviter found: {invite.inviter}")
                 return invite.inviter
 
+            logger.debug("Invite was created by bot, checking database")
             db_invite = await self.bot.prisma.invite.delete(where={"code": invite.code})
             if db_invite is None:
+                logger.debug("No matching invite found in database")
                 return
+            logger.debug(f"Inviter found in database: {db_invite.inviter_id}")
             return self.bot.get_user(db_invite.inviter_id)
 
         # If the invite still present, we use the other method to find the invite
         # Check which invite has a different uses count than the invite in the cache
+        def get_invite_by_code(invites: list[discord.Invite], code: str) -> discord.Invite:
+            try:
+                for invite in invites:
+                    if invite.code == code:
+                        return invite
+            except KeyError:
+                pass  # No invites cached for this guild, treat as not found
+            raise InviteNotFound
+
+        logger.debug("Trying the use count method to find the inviter")
         for invite in after:
             try:
-                if invite.uses < self.find_invite_by_code(invite.code, guild_id).uses:  # type: ignore
+                before_invite = get_invite_by_code(before, invite.code)
+                logger.debug(
+                    f"Checking invite {invite.code}: before uses {before_invite.uses}, after uses {invite.uses}"
+                )
+                if invite.uses < before_invite.uses:  # type: ignore
+                    logger.debug(f"Inviter found: {invite.inviter}")
                     return invite.inviter
 
             except InviteNotFound:
+                logger.debug(f"Invite {invite.code} not found in before list")
                 continue
+        logger.debug("Inviter not found")
 
     @commands.Cog.listener()
     async def on_invite_delete(self, invite: discord.Invite) -> None:
@@ -213,7 +253,7 @@ class Invite(commands.Cog):
         # the member join event, the invite will be missing. The easy solution i found that fits my needs
         # is to wait a bit before updating the cache to wait for the member join event to be processed.
         logger.debug(
-            f"Invite deleted: {invite.code} for guild {invite.guild}, waiting for potential member join event"
+            f"Invite {format_invite(invite)} deleted in guild {invite.guild}, waiting for potential member join event"
         )
         await asyncio.sleep(1)
         await self._handle_invite_change(invite)
@@ -227,8 +267,10 @@ class Invite(commands.Cog):
 
             inviter: discord.User | None
             if member.guild.id in self.invites:
+                logger.debug(f"Member {member.name} joined in {member.guild.name}, checking inviter")
+                invites_before = self.invites[member.guild.id]
                 invites_after = await member.guild.invites()
-                inviter = await self.find_inviter(invites_after, member.guild.id)
+                inviter = await self.find_inviter(invites_before, invites_after, member.guild)
                 self.invites[member.guild.id] = invites_after
                 if inviter is not None and inviter is not None:
                     logger.info(f"Member {member.name} joined in {member.guild.name} invited by {inviter.name}")
