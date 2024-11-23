@@ -20,6 +20,9 @@ pydantic-settings = "^2.4.0"
 [tool.poetry.dev-dependencies]
 black = "^22.6.0"
 
+[tool.pyright]
+reportDeprecated = "warning"
+
 [tool.black]
 line-length = 119
 

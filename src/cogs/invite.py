@@ -25,13 +25,13 @@ REQUIRED_PERMISSIONS = discord.Permissions(
     create_instant_invite=True,
 )
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 
 def format_invite(invite: discord.Invite) -> dict:
     if invite.max_age:
-        time_created = invite.created_at or datetime.utcnow()
-        time_remaining = (time_created + timedelta(seconds=invite.max_age)) - datetime.utcnow()
+        time_created = invite.created_at or datetime.now(timezone.utc)
+        time_remaining = (time_created + timedelta(seconds=invite.max_age)) - datetime.now(timezone.utc)
         time_remaining_seconds = max(0, int(time_remaining.total_seconds()))
     else:
         time_remaining_seconds = "∞"  # Infinite duration
@@ -265,7 +265,7 @@ class Invite(commands.Cog):
             if guild is None or guild.invite_log_channel_id is None:
                 return
 
-            inviter: discord.User | None
+            inviter: discord.User | None = None
             if member.guild.id in self.invites:
                 logger.debug(f"Member {member.name} joined in {member.guild.name}, checking inviter")
                 invites_before = self.invites[member.guild.id]
