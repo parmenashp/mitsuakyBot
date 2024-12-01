@@ -236,7 +236,7 @@ class Invite(commands.Cog):
                 logger.debug(
                     f"Checking invite {invite.code}: before uses {before_invite.uses}, after uses {invite.uses}"
                 )
-                if invite.uses < before_invite.uses:  # type: ignore
+                if invite.uses > before_invite.uses:  # type: ignore
                     logger.debug(f"Inviter found: {invite.inviter}")
                     return invite.inviter
 
