@@ -27,4 +27,6 @@ COPY ./src .
 
 COPY settings.toml .
 
+ENTRYPOINT ["doppler", "run", "--"]
+
 CMD ["python", "main.py"]
