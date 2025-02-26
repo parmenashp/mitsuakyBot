@@ -27,7 +27,7 @@ PartialEmoji = Annotated[
 
 
 class BotSettings(BaseModel):
-    token: str = Field(..., env="DISCORD_TOKEN")
+    token: str = Field(default="TOKEN", env="DISCORD_TOKEN")
     initial_extensions: list[str]
 
 
